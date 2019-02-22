@@ -9,10 +9,19 @@ import org.apache.http.util.EntityUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.math.BigDecimal;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static java.util.Collections.emptyList;
 
@@ -82,11 +91,60 @@ public class YahooFinanceClient {
         }
 
         //TODO parse entity.getContent() and return data
+
+        return parsePricingData(entity);
+    }
+
+    /**
+     * Parse content from HttpEntity
+     * @param entity
+     * @return
+     */
+    // TODO By Tibi: Maybe need to pass the class type to be parsed dynamically. e.g.: parseData(HttpEntity entity, PricingHistory.class) of parseData(HttpEntity entity, DividendHistory.class) and these classes only parse the required data
+    private List<PricingHistory> parsePricingData(HttpEntity entity) {
+        try (InputStream content = entity.getContent()) {
+            List<String> contentList = new BufferedReader(new InputStreamReader(content, StandardCharsets.UTF_8))
+                    .lines()
+                    .collect(Collectors.toList());
+            log.info(contentList.toString());
+
+            List<PricingHistory> pricingHistories = contentList.stream().skip(1)
+                    .map(this::parsePricingHistory).filter(Objects::nonNull).collect(Collectors.toList());
+
+            return pricingHistories;
+        } catch (IOException e) {
+            log.warn("Error while parsing fetched data.", e);
+//            throw e;
+        }
+
         return emptyList();
-	}
+    }
+
+    private PricingHistory parsePricingHistory(String line) {
+        try {
+            // Date,Open,High,Low,Close,Adj Close,Volume
+            String[] columns = line.split(",");
+
+            PricingHistory pricingHistory = PricingHistory.builder()
+                    .date(LocalDate.parse(columns[0]))
+                    .open(BigDecimal.valueOf(Double.parseDouble(columns[1])))
+                    .high(BigDecimal.valueOf(Double.parseDouble(columns[2])))
+                    .low(BigDecimal.valueOf(Double.parseDouble(columns[3])))
+                    .close(BigDecimal.valueOf(Double.parseDouble(columns[4])))
+                    .adjClose(BigDecimal.valueOf(Double.parseDouble(columns[5])))
+                    .volume(BigDecimal.valueOf(Double.parseDouble(columns[6])))
+                    .build();
+
+            return pricingHistory;
+        } catch (NumberFormatException e) {
+            return null;
+        } catch (DateTimeParseException e) {
+            return null;
+        }
+    }
 
 
-	public List<?> fetchDividendData(String symbol, LocalDate fromDate, LocalDate toDate) {
+    public List<?> fetchDividendData(String symbol, LocalDate fromDate, LocalDate toDate) {
 		log.info("Acquiring dividend data for {} from {} to {}", symbol, fromDate, toDate);
 		session.acquireCrumbWithTicker(symbol);
 
@@ -98,6 +156,50 @@ public class YahooFinanceClient {
         }
 
         //TODO parse entity.getContent() and return data
-        return emptyList();
+
+        return parseDividendData(entity);
 	}
+
+    /**
+     * Parse content from HttpEntity
+     * @param entity
+     * @return
+     */
+    // TODO By Tibi: Maybe need to pass the class type to be parsed dynamically. e.g.: parseData(HttpEntity entity, PricingHistory.class) of parseData(HttpEntity entity, DividendHistory.class) and these classes only parse the required data
+    private List<DividendHistory> parseDividendData(HttpEntity entity) {
+        try (InputStream content = entity.getContent()) {
+            List<String> contentList = new BufferedReader(new InputStreamReader(content, StandardCharsets.UTF_8))
+                    .lines()
+                    .collect(Collectors.toList());
+            log.info(contentList.toString());
+
+            List<DividendHistory> dividendHistories = contentList.stream().skip(1)
+                    .map(this::parseDividendHistory).filter(Objects::nonNull).collect(Collectors.toList());
+
+            return dividendHistories;
+        } catch (IOException e) {
+            log.warn("Error while parsing fetched data.", e);
+//            throw e;
+        }
+
+        return emptyList();
+    }
+
+    private DividendHistory parseDividendHistory(String line) {
+        try {
+            // Date,Dividend
+            String[] columns = line.split(",");
+
+            DividendHistory dividendHistory = DividendHistory.builder()
+                    .date(LocalDate.parse(columns[0]))
+                    .dividend(BigDecimal.valueOf(Double.parseDouble(columns[1])))
+                    .build();
+
+            return dividendHistory;
+        } catch (NumberFormatException e) {
+            return null;
+        } catch (DateTimeParseException e) {
+            return null;
+        }
+    }
 }
