@@ -106,6 +106,7 @@ public class YahooFinanceClient {
             List<String> contentList = new BufferedReader(new InputStreamReader(content, StandardCharsets.UTF_8))
                     .lines()
                     .collect(Collectors.toList());
+            log.info(contentList.toString());
 
             List<PricingHistory> pricingHistories = contentList.stream().skip(1)
                     .map(this::parsePricingHistory).filter(Objects::nonNull).collect(Collectors.toList());
@@ -143,7 +144,7 @@ public class YahooFinanceClient {
     }
 
 
-    public List<?> fetchDividendData(String symbol, LocalDate fromDate, LocalDate toDate) {
+    public List<DividendHistory> fetchDividendData(String symbol, LocalDate fromDate, LocalDate toDate) {
 		log.info("Acquiring dividend data for {} from {} to {}", symbol, fromDate, toDate);
 		session.acquireCrumbWithTicker(symbol);
 
@@ -170,6 +171,7 @@ public class YahooFinanceClient {
             List<String> contentList = new BufferedReader(new InputStreamReader(content, StandardCharsets.UTF_8))
                     .lines()
                     .collect(Collectors.toList());
+            log.info(contentList.toString());
 
             List<DividendHistory> dividendHistories = contentList.stream().skip(1)
                     .map(this::parseDividendHistory).filter(Objects::nonNull).collect(Collectors.toList());

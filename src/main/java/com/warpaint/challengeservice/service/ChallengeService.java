@@ -1,5 +1,6 @@
 package com.warpaint.challengeservice.service;
 
+import com.warpaint.challengeservice.dataprovider.DividendHistory;
 import com.warpaint.challengeservice.dataprovider.PricingHistory;
 import com.warpaint.challengeservice.dataprovider.YahooFinanceClient;
 import com.warpaint.challengeservice.model.Asset;
@@ -33,17 +34,21 @@ public class ChallengeService {
         LocalDate validEndDate = validateEndDate(endDate, now);
 
         List<PricingHistory> priceData = dataProvider.fetchPriceData(asset.getSymbol(), validaStartDate, validEndDate);
+        List<DividendHistory> dividendData = dataProvider.fetchDividendData(asset.getSymbol(), validaStartDate, validEndDate);
 
-        return priceData.stream().map(pricingHistory ->
-            Pricing.builder()
+        return priceData.stream().map(pricingHistory -> {
+            Optional<DividendHistory> dividend = dividendData.stream()
+                    .filter(dividendHistory -> dividendHistory.getDate().equals(pricingHistory.getDate()))
+                    .findAny();
+            return Pricing.builder()
                     .closePrice(pricingHistory.getClose())
-                    .dividend(BigDecimal.ZERO)
+                    .dividend(dividend.isPresent() ? dividend.get().getDividend() : BigDecimal.ZERO)
                     .highPrice(pricingHistory.getHigh())
                     .lowPrice(pricingHistory.getLow())
                     .openPrice(pricingHistory.getOpen())
                     .tradeDate(pricingHistory.getDate())
-                    .build()
-        ).collect(Collectors.toList());
+                    .build();
+        }).collect(Collectors.toList());
     }
 
     public List<Pricing> getProjectedAssetData(Asset asset) {
