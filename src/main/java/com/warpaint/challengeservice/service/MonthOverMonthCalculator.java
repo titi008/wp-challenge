@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -22,7 +23,9 @@ public class MonthOverMonthCalculator {
             Pricing current = pricingHistoryByMonth.get(i);
             Pricing previous = pricingHistoryByMonth.get(i - 1);
 
-            BigDecimal change = current.getClosePrice().divide(previous.getClosePrice()).add(BigDecimal.valueOf(-1.0));
+            BigDecimal change = current.getClosePrice()
+                    .divide(previous.getClosePrice(), 6, RoundingMode.HALF_EVEN)
+                    .add(BigDecimal.valueOf(-1.0));
             changes.put(current.getTradeDate(), change);
         }
 
