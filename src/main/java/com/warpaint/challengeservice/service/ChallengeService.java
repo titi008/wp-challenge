@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -28,6 +29,16 @@ public class ChallengeService {
         log.info("Fetching historical price data");
         // TODO Implement getHistoricalAssetData()
 
+        return getPricingHistory(asset, startDate, endDate);
+    }
+
+    public List<Pricing> getProjectedAssetData(Asset asset) {
+        log.info("Generating projected price data");
+        // TODO Implement getProjectedAssetData()
+        return null;
+    }
+
+    private List<Pricing> getPricingHistory(Asset asset, Optional<LocalDate> startDate, Optional<LocalDate> endDate) {
         LocalDate now = LocalDate.now();
         // TODO: By Tibi: Also need to check if startDate is before endDate
         LocalDate validaStartDate = validateStartDate(startDate, now);
@@ -48,13 +59,7 @@ public class ChallengeService {
                     .openPrice(pricingHistory.getOpen())
                     .tradeDate(pricingHistory.getDate())
                     .build();
-        }).collect(Collectors.toList());
-    }
-
-    public List<Pricing> getProjectedAssetData(Asset asset) {
-        log.info("Generating projected price data");
-        // TODO Implement getProjectedAssetData()
-        return null;
+        }).sorted(Comparator.comparing(Pricing::getTradeDate)).collect(Collectors.toList());
     }
 
     /**
