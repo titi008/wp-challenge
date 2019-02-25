@@ -23,7 +23,7 @@ public class PredictionService {
 
     private static final double NUMBER_OF_SIMULATION = 1000;
 
-    private final MonthOverMonthChangeCalculator monthOverMonthChangeCalculator;
+    private final ChangeCalculator changeCalculator;
 
     /**
      * Predicts future close prices for the given number of months.
@@ -31,18 +31,18 @@ public class PredictionService {
      *
      * @param numberOfMonths Number of month to predict into the future
      * @param pricingHistory Pricing history day-by-day
-     * @return List containing pricing in the following order: min, med, max
+     * @return List containing pricing in the following order: {max, med, min}
      */
     public List<Pricing> predictPricing(int numberOfMonths, List<Pricing> pricingHistory) {
         log.debug("Calculate predicted pricest for the next {} months", numberOfMonths);
         List<Pricing> pricingHistoryByMonth = filterByLastBusinessDayOfMonth(pricingHistory);
 
         Map<LocalDate, BigDecimal> monthOverMonthChanges =
-                monthOverMonthChangeCalculator.calculateMonthOverMonthChangeHistory(pricingHistoryByMonth);
+                changeCalculator.calculateChangeHistory(pricingHistoryByMonth);
 
         LocalDate lastPredictedDate = LocalDate.now().plusMonths(numberOfMonths);
 
-        List<Double> predictedCloseValues = lastPredictedCloseValues(
+        List<Double> predictedCloseValues = predictCloseValues(
                 new ArrayList<>(monthOverMonthChanges.values()),
                 numberOfMonths,
                 pricingHistoryByMonth.get(pricingHistoryByMonth.size() - 1).getClosePrice());
@@ -77,7 +77,7 @@ public class PredictionService {
      * This filtering also returns the last data from the pricingHistory even if it is not the last business day of the month
      *
      * @param pricingHistory Day-by-day pricing history
-     * @return Filtered list by the last business day of every month
+     * @return Filtered list by the last business day of every month. The list is sorted ascending by the trade date
      */
     private List<Pricing> filterByLastBusinessDayOfMonth(List<Pricing> pricingHistory) {
         Map<YearMonth, Pricing> lastBusinessDayPricings = new HashMap<>();
@@ -106,9 +106,9 @@ public class PredictionService {
      * @param lastPrice Last available price from the history
      * @return
      */
-    private List<Double> lastPredictedCloseValues(List<BigDecimal> priceChanges,
-                                                  int numberOfMonths,
-                                                  BigDecimal lastPrice) {
+    private List<Double> predictCloseValues(List<BigDecimal> priceChanges,
+                                            int numberOfMonths,
+                                            BigDecimal lastPrice) {
         double monthlyVolatility = getMonthlyVolatility(priceChanges);
 
         Set<Double> lastPredictedMonthCloseValues = new HashSet<>();
@@ -163,10 +163,12 @@ public class PredictionService {
         LinkedList<Double> prices = new LinkedList<>();
 
         double price = calculateNextPrice(monthlyVolatility, lastPrice.doubleValue());
-        prices.add(price);
+        // Limit price to positive values
+        prices.add(price < 0 ? 0 : price);
 
         while (prices.size() < numberOfMonths) {
-            prices.add(calculateNextPrice(monthlyVolatility, prices.getLast()));
+            double nextPrice = calculateNextPrice(monthlyVolatility, prices.getLast());
+            prices.add(nextPrice < 0 ? 0 : nextPrice);
         }
 
         return prices;
