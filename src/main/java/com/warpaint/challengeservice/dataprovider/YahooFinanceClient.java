@@ -106,7 +106,7 @@ public class YahooFinanceClient {
             List<String> contentList = new BufferedReader(new InputStreamReader(content, StandardCharsets.UTF_8))
                     .lines()
                     .collect(Collectors.toList());
-            log.info(contentList.toString());
+            log.trace(contentList.toString());
 
             List<PricingHistory> pricingHistories = contentList.stream().skip(1)
                     .map(this::parsePricingHistory).filter(Objects::nonNull).collect(Collectors.toList());
@@ -171,7 +171,7 @@ public class YahooFinanceClient {
             List<String> contentList = new BufferedReader(new InputStreamReader(content, StandardCharsets.UTF_8))
                     .lines()
                     .collect(Collectors.toList());
-            log.info(contentList.toString());
+            log.trace(contentList.toString());
 
             List<DividendHistory> dividendHistories = contentList.stream().skip(1)
                     .map(this::parseDividendHistory).filter(Objects::nonNull).collect(Collectors.toList());

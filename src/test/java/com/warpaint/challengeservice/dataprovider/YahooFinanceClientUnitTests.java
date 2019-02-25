@@ -75,10 +75,30 @@ public class YahooFinanceClientUnitTests {
         doReturn(entity).when(httpResponse).getEntity();
         doReturn(stream).when(entity).getContent();
 
-        List<?> dataSet = client.fetchPriceData(SYMBOL, FROM, TO);
+        List<PricingHistory> dataSet = client.fetchPriceData(SYMBOL, FROM, TO);
         assertEquals(2, dataSet.size());
 
-        // TODO assert
+        assertEquals(PricingHistory.builder()
+                        .date(date1)
+                        .open(BigDecimal.valueOf(1.0))
+                        .high(BigDecimal.valueOf(2.0))
+                        .low(BigDecimal.valueOf(3.0))
+                        .close(BigDecimal.valueOf(close1.doubleValue()))
+                        .adjClose(BigDecimal.valueOf(5.0))
+                        .volume(BigDecimal.valueOf(6.0))
+                        .build(),
+                dataSet.get(0));
+
+        assertEquals(PricingHistory.builder()
+                        .date(date2)
+                        .open(BigDecimal.valueOf(1.0))
+                        .high(BigDecimal.valueOf(2.0))
+                        .low(BigDecimal.valueOf(3.0))
+                        .close(BigDecimal.valueOf(close2.doubleValue()))
+                        .adjClose(BigDecimal.valueOf(11.0))
+                        .volume(BigDecimal.valueOf(12.0))
+                        .build(),
+                dataSet.get(1));
     }
 
     @Test
@@ -97,7 +117,7 @@ public class YahooFinanceClientUnitTests {
         doReturn(entity).when(httpResponse).getEntity();
         doThrow(IOException.class).when(entity).getContent();
 
-        List<?> dataSet = client.fetchPriceData(SYMBOL, FROM, TO);
+        List<PricingHistory> dataSet = client.fetchPriceData(SYMBOL, FROM, TO);
 
         assertEquals(0, dataSet.size());
     }
@@ -129,10 +149,30 @@ public class YahooFinanceClientUnitTests {
         doReturn(entity).when(httpResponse).getEntity();
         doReturn(stream).when(entity).getContent();
 
-        List<?> dataSet = client.fetchPriceData(SYMBOL, FROM, TO);
+        List<PricingHistory> dataSet = client.fetchPriceData(SYMBOL, FROM, TO);
         assertEquals(2, dataSet.size());
 
-        // TODO assert
+        assertEquals(PricingHistory.builder()
+                        .date(date1)
+                        .open(BigDecimal.valueOf(1.0))
+                        .high(BigDecimal.valueOf(2.0))
+                        .low(BigDecimal.valueOf(3.0))
+                        .close(BigDecimal.valueOf(close1.doubleValue()))
+                        .adjClose(BigDecimal.valueOf(5.0))
+                        .volume(BigDecimal.valueOf(6.0))
+                        .build(),
+                dataSet.get(0));
+
+        assertEquals(PricingHistory.builder()
+                        .date(date2)
+                        .open(BigDecimal.valueOf(1.0))
+                        .high(BigDecimal.valueOf(2.0))
+                        .low(BigDecimal.valueOf(3.0))
+                        .close(BigDecimal.valueOf(close2.doubleValue()))
+                        .adjClose(BigDecimal.valueOf(11.0))
+                        .volume(BigDecimal.valueOf(12.0))
+                        .build(),
+                dataSet.get(1));
     }
 
     @Test
@@ -164,10 +204,20 @@ public class YahooFinanceClientUnitTests {
         doReturn(entity).when(httpResponse).getEntity();
         doReturn(stream).when(entity).getContent();
 
-        List<?> dataSet = client.fetchDividendData(SYMBOL, FROM, TO);
+        List<DividendHistory> dataSet = client.fetchDividendData(SYMBOL, FROM, TO);
         assertEquals(2, dataSet.size());
         
-        // TODO assert
+        assertEquals(DividendHistory.builder()
+                        .date(date1)
+                        .dividend(dividend1)
+                        .build(),
+                dataSet.get(0));
+
+        assertEquals(DividendHistory.builder()
+                        .date(date2)
+                        .dividend(dividend2)
+                        .build(),
+                dataSet.get(1));
     }
 
     @Test
@@ -186,7 +236,7 @@ public class YahooFinanceClientUnitTests {
         doReturn(entity).when(httpResponse).getEntity();
         doThrow(IOException.class).when(entity).getContent();
 
-        List<?> dataSet = client.fetchDividendData(SYMBOL, FROM, TO);
+        List<DividendHistory> dataSet = client.fetchDividendData(SYMBOL, FROM, TO);
 
         assertEquals(0, dataSet.size());
     }
@@ -218,10 +268,20 @@ public class YahooFinanceClientUnitTests {
         doReturn(entity).when(httpResponse).getEntity();
         doReturn(stream).when(entity).getContent();
 
-        List<?> dataSet = client.fetchDividendData(SYMBOL, FROM, TO);
+        List<DividendHistory> dataSet = client.fetchDividendData(SYMBOL, FROM, TO);
         assertEquals(2, dataSet.size());
 
-        // TODO assert
+        assertEquals(DividendHistory.builder()
+                        .date(date1)
+                        .dividend(dividend1)
+                        .build(),
+                dataSet.get(0));
+
+        assertEquals(DividendHistory.builder()
+                        .date(date2)
+                        .dividend(dividend2)
+                        .build(),
+                dataSet.get(1));
     }
 
     @Test
@@ -235,7 +295,7 @@ public class YahooFinanceClientUnitTests {
         when(httpResponse.getStatusLine()).thenReturn(statusLine);
         doReturn(httpResponse).when(httpHandler).fetchResponse(anyObject());
 
-        List<?> dataSet = client.fetchPriceData(SYMBOL, FROM, TO);
+        List<PricingHistory> dataSet = client.fetchPriceData(SYMBOL, FROM, TO);
 
         assertEquals(0, dataSet.size());
     }
@@ -251,7 +311,7 @@ public class YahooFinanceClientUnitTests {
         when(httpResponse.getStatusLine()).thenReturn(statusLine);
         doReturn(httpResponse).when(httpHandler).fetchResponse(anyObject());
 
-        List<?> dataSet = client.fetchDividendData(SYMBOL, FROM, TO);
+        List<DividendHistory> dataSet = client.fetchDividendData(SYMBOL, FROM, TO);
 
         assertEquals(0, dataSet.size());
     }
