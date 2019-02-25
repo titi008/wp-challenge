@@ -6,7 +6,6 @@ import com.warpaint.challengeservice.dataprovider.YahooFinanceClient;
 import com.warpaint.challengeservice.model.Asset;
 import com.warpaint.challengeservice.model.Pricing;
 import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -16,25 +15,44 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+/**
+ * Provide pricing history for the given time range
+ */
 @Service
-@Slf4j
 @AllArgsConstructor
 public class PricingHistoryDataProvider {
 
+    private static final int DEFAULT_HISTORY_YEARS = 5;
+
     private final YahooFinanceClient dataProvider;
 
-    public List<Pricing> getPricingHistoryLastFiveYears(Asset asset) {
+    /**
+     * Get pricing history without providing date range. The default value of years is 5.
+     *
+     * @param asset Asset symbol
+     * @return Pricing history for the last 5 years
+     */
+    public List<Pricing> getPricingHistory(Asset asset) {
         return getPricingHistory(asset, Optional.empty(), Optional.empty());
     }
 
+    /**
+     * Get pricing history for the given interval. 5 years by default if intervals are empty
+     *
+     * @param asset
+     * @param startDate
+     * @param endDate
+     * @return
+     */
     public List<Pricing> getPricingHistory(Asset asset, Optional<LocalDate> startDate, Optional<LocalDate> endDate) {
         LocalDate now = LocalDate.now();
-        // TODO: By Tibi: Also need to check if startDate is before endDate
-        LocalDate validaStartDate = validateStartDate(startDate, now);
+        LocalDate validStartDate = validateStartDate(startDate, now);
         LocalDate validEndDate = validateEndDate(endDate, now);
 
-        List<PricingHistory> priceData = dataProvider.fetchPriceData(asset.getSymbol(), validaStartDate, validEndDate);
-        List<DividendHistory> dividendData = dataProvider.fetchDividendData(asset.getSymbol(), validaStartDate, validEndDate);
+        validateStartDateBeforeEndDate(validStartDate, validEndDate);
+
+        List<PricingHistory> priceData = dataProvider.fetchPriceData(asset.getSymbol(), validStartDate, validEndDate);
+        List<DividendHistory> dividendData = dataProvider.fetchDividendData(asset.getSymbol(), validStartDate, validEndDate);
 
         return priceData.stream().map(pricingHistory -> {
             Optional<DividendHistory> dividend = dividendData.stream()
@@ -52,14 +70,26 @@ public class PricingHistoryDataProvider {
     }
 
     /**
-     * Validate startDate
+     * Check that start date is before end date
      *
-     * @param startDate
-     * @param now
+     * @param startDate Start date
+     * @param endDate   End date
+     */
+    private void validateStartDateBeforeEndDate(LocalDate startDate, LocalDate endDate) {
+        if (endDate.isBefore(startDate)) {
+            throw new IllegalArgumentException("End date is before start date");
+        }
+    }
+
+    /**
+     * Validate startDate. Return now - 5 years if not presents
+     *
+     * @param startDate Start date
+     * @param now Current date
      */
     private LocalDate validateStartDate(Optional<LocalDate> startDate, LocalDate now) {
         if (!startDate.isPresent()) {
-            return now.minusYears(5);
+            return now.minusYears(DEFAULT_HISTORY_YEARS);
         }
 
         LocalDate date = startDate.get();
@@ -74,15 +104,11 @@ public class PricingHistoryDataProvider {
     /**
      * Validate endDate
      *
-     * @param endDate
-     * @param now
+     * @param endDate End date
+     * @param now Current date
      */
     private LocalDate validateEndDate(Optional<LocalDate> endDate, LocalDate now) {
-        if (!endDate.isPresent()) {
-            return now;
-        }
-
-        if (!endDate.get().isAfter(now)) {
+        if (!endDate.isPresent() || endDate.get().isAfter(now)) {
             return now;
         }
 

@@ -11,12 +11,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+/**
+ * Calculate price changes for every month
+ *
+ * @author tiborszucs
+ */
 @Service
 @Slf4j
-public class MonthOverMonthCalculator {
+public class MonthOverMonthChangeCalculator {
 
-    // TODO By Tibi: Maybe open price instead of close
+    /**
+     * Calculate price changes for every month
+     *
+     * @param pricingHistoryByMonth Prices for every month
+     * @return Map of change value and the trade date
+     */
     public Map<LocalDate, BigDecimal> calculateMonthOverMonthChangeHistory(List<Pricing> pricingHistoryByMonth) {
+        log.debug("Calculate monthly changes");
         Map<LocalDate, BigDecimal> changes = new TreeMap<>();
 
         for (int i = 1; i < pricingHistoryByMonth.size(); i++) {
