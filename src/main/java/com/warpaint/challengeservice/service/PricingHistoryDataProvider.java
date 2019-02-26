@@ -32,7 +32,7 @@ public class PricingHistoryDataProvider {
      * @param asset Asset symbol
      * @return Pricing history for the last 5 years
      */
-    public List<Pricing> getPricingHistory(Asset asset) {
+    public List<Pricing> getPricingHistory(Asset asset) throws Exception {
         return getPricingHistory(asset, Optional.empty(), Optional.empty());
     }
 
@@ -44,7 +44,8 @@ public class PricingHistoryDataProvider {
      * @param endDate
      * @return
      */
-    public List<Pricing> getPricingHistory(Asset asset, Optional<LocalDate> startDate, Optional<LocalDate> endDate) {
+    public List<Pricing> getPricingHistory(Asset asset, Optional<LocalDate> startDate, Optional<LocalDate> endDate)
+            throws Exception {
         LocalDate now = LocalDate.now();
         // TODO By Tibi: Bean validation instead of these methods
         LocalDate validStartDate = validateStartDate(startDate, now);

@@ -7,7 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.*;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -18,17 +19,17 @@ public class ChallengeService {
 
     private final PricingHistoryDataProvider pricingHistoryDataProvider;
 
-    private final PredictionService predictionService;
+    private final ProjectionService projectionService;
 
     public List<Pricing> getHistoricalAssetData(Asset asset,
                                                 Optional<LocalDate> startDate,
-                                                Optional<LocalDate> endDate) {
+                                                Optional<LocalDate> endDate) throws Exception {
         log.info("Fetching historical price data");
 
         return pricingHistoryDataProvider.getPricingHistory(asset, startDate, endDate);
     }
 
-    public List<Pricing> getProjectedAssetData(Asset asset, Optional<Integer> numberOfMonthsOptional) {
+    public List<Pricing> getProjectedAssetData(Asset asset, Optional<Integer> numberOfMonthsOptional) throws Exception {
         log.info("Generating projected price data");
 
         // TODO By Tibi: Only pass the int into this method
@@ -36,6 +37,6 @@ public class ChallengeService {
 
         List<Pricing> pricingHistoryLastFiveYears = pricingHistoryDataProvider.getPricingHistory(asset);
 
-        return predictionService.predictPricing(numberOfMonths, pricingHistoryLastFiveYears);
+        return projectionService.projectedPricing(numberOfMonths, pricingHistoryLastFiveYears);
     }
 }

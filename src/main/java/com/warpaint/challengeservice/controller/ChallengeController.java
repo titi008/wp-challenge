@@ -5,7 +5,10 @@ import com.warpaint.challengeservice.model.Pricing;
 import com.warpaint.challengeservice.service.ChallengeService;
 import lombok.AllArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -23,13 +26,14 @@ public class ChallengeController {
                                                 @RequestParam("startDate") @DateTimeFormat(pattern = "yyyy-MM-dd")
                                                         Optional<LocalDate> startDate,
                                                 @RequestParam("endDate") @DateTimeFormat(pattern = "yyyy-MM-dd")
-                                                            Optional<LocalDate> endDate) {
+                                                            Optional<LocalDate> endDate) throws Exception {
         return challengeService.getHistoricalAssetData(asset, startDate, endDate);
     }
 
     @RequestMapping("{asset}/projected")
     public List<Pricing> getProjectedAssetData(@PathVariable Asset asset,
-                                               @RequestParam("numberOfMonths") Optional<Integer> numberOfMonths) {
+                                               @RequestParam("numberOfMonths") Optional<Integer> numberOfMonths)
+            throws Exception {
         return challengeService.getProjectedAssetData(asset, numberOfMonths);
     }
 }

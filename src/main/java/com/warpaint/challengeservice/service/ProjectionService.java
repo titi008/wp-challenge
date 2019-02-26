@@ -12,50 +12,54 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Run 1000 simulations for the given months to predict future prices
+ * Run 1000 simulations for the given months to project future prices
  *
  * @author tiborszucs
  */
 @Service
 @Slf4j
 @AllArgsConstructor
-// TODO By Tibi: Rename every Prediction to Projected
-public class PredictionService {
+public class ProjectionService {
 
     // TODO Create a provider and inject here
     private static final double NUMBER_OF_SIMULATION = 1000;
+    // TODO Inject this random instance
+    private static final Random RANDOM = new Random();
 
     private final ChangeCalculator changeCalculator;
 
     /**
-     * Predicts future close prices for the given number of months.
-     * Returns a list of 3 element: max, medium, min prices of the last predicted month for 1000 simulations.
+     * Gives future close prices for the given number of months.
+     * Returns a list of 3 element: max, medium, min prices of the last month for 1000 simulations.
      *
-     * @param numberOfMonths Number of month to predict into the future
+     * @param numberOfMonths Number of month to calculate into the future
      * @param pricingHistory Pricing history day-by-day
      * @return List containing pricing in the following order: {max, med, min}
      */
-    public List<Pricing> predictPricing(int numberOfMonths, List<Pricing> pricingHistory) {
-        log.debug("Calculate predicted pricest for the next {} months", numberOfMonths);
+    public List<Pricing> projectedPricing(int numberOfMonths, List<Pricing> pricingHistory) {
+        log.debug("Calculate prices for the next {} months", numberOfMonths);
         // TODO By Tibi: Expand to class and write test
         List<Pricing> pricingHistoryByMonth = filterByLastBusinessDayOfMonth(pricingHistory);
 
         Map<LocalDate, BigDecimal> monthOverMonthChanges =
                 changeCalculator.calculateChangeHistory(pricingHistoryByMonth);
 
-        LocalDate lastPredictedDate = LocalDate.now().plusMonths(numberOfMonths);
+        LocalDate lastCalculatedDate = LocalDate.now().plusMonths(numberOfMonths);
 
-        List<Double> predictedCloseValues = predictCloseValues(
+        List<Double> projectedCloseValues = projectedCloseValues(
                 new ArrayList<>(monthOverMonthChanges.values()),
                 numberOfMonths,
-                // TODO Move to a method
-                pricingHistoryByMonth.get(pricingHistoryByMonth.size() - 1).getClosePrice());
+                getLastClosePrice(pricingHistoryByMonth));
 
         return Arrays.asList(
-                toPricing(predictedCloseValues.get(0), lastPredictedDate),
-                toPricing(predictedCloseValues.get(1), lastPredictedDate),
-                toPricing(predictedCloseValues.get(2), lastPredictedDate)
+                toPricing(projectedCloseValues.get(0), lastCalculatedDate),
+                toPricing(projectedCloseValues.get(1), lastCalculatedDate),
+                toPricing(projectedCloseValues.get(2), lastCalculatedDate)
         );
+    }
+
+    private BigDecimal getLastClosePrice(List<Pricing> pricingHistoryByMonth) {
+        return pricingHistoryByMonth.get(pricingHistoryByMonth.size() - 1).getClosePrice();
     }
 
     /**
@@ -103,36 +107,36 @@ public class PredictionService {
     }
 
     /**
-     * Do the prediction over several simulation using Monte Carlo Simulation
+     * Do the projection over several simulation using Monte Carlo Simulation
      *
      * @param priceChanges Month over month price changes from the historical data
-     * @param numberOfMonths Number of predictable months
+     * @param numberOfMonths Number of months to calculate
      * @param lastPrice Last available price from the history
-     * @return
+     * @return List of 3 elements with this order: {max, med, min}
      */
-    private List<Double> predictCloseValues(List<BigDecimal> priceChanges,
-                                            int numberOfMonths,
-                                            BigDecimal lastPrice) {
+    private List<Double> projectedCloseValues(List<BigDecimal> priceChanges,
+                                              int numberOfMonths,
+                                              BigDecimal lastPrice) {
         double monthlyVolatility = getMonthlyVolatility(priceChanges);
 
-        Set<Double> lastPredictedMonthCloseValues = new HashSet<>();
+        Set<Double> lastProjectedMonthCloseValues = new HashSet<>();
 
         // Simulate Monte Carlo forecast
         for (int i = 0; i < NUMBER_OF_SIMULATION; i++) {
-            lastPredictedMonthCloseValues.add(monteCarlo(numberOfMonths, lastPrice, monthlyVolatility).getLast());
+            lastProjectedMonthCloseValues.add(monteCarlo(numberOfMonths, lastPrice, monthlyVolatility).getLast());
         }
 
-        return getStatisticalValues(lastPredictedMonthCloseValues);
+        return getStatisticalValues(lastProjectedMonthCloseValues);
     }
 
     /**
      * Return the max, med, min close values of the given set
      *
-     * @param lastPredictedMonthCloseValues Predicted prices
+     * @param lastProjectedMonthCloseValues Projected prices
      * @return List of 3 elements with this order: {max, med, min}
      */
-    private List<Double> getStatisticalValues(Set<Double> lastPredictedMonthCloseValues) {
-        List<Double> sortedValues = lastPredictedMonthCloseValues.stream().collect(Collectors.toList());
+    private List<Double> getStatisticalValues(Set<Double> lastProjectedMonthCloseValues) {
+        List<Double> sortedValues = lastProjectedMonthCloseValues.stream().collect(Collectors.toList());
         sortedValues.sort(Comparator.naturalOrder());
 
         Double max = sortedValues.get(sortedValues.size() - 1);
@@ -156,12 +160,12 @@ public class PredictionService {
     }
 
     /**
-     * Monte Carlo Simulation to predict the price
+     * Monte Carlo Simulation
      *
-     * @param numberOfMonths Number of predictable months
+     * @param numberOfMonths Number of months for calculation
      * @param lastPrice Last available price from the history
      * @param monthlyVolatility Monthly volatility
-     * @return Predicted price in the future for the given month
+     * @return Prices in the future for the given month
      */
     private LinkedList<Double> monteCarlo(int numberOfMonths, BigDecimal lastPrice, double monthlyVolatility) {
         LinkedList<Double> prices = new LinkedList<>();
@@ -183,15 +187,13 @@ public class PredictionService {
     }
 
     /**
-     * Calculate next predicted price with a random number
+     * Calculate next price with a random number
      *
      * @param monthlyVolatility Monthly volatility
      * @param lastPrice Last calculated price
-     * @return
+     * @return The next price
      */
     private double calculateNextPrice(double monthlyVolatility, double lastPrice) {
-        // TODO Inject this random instance, do not reinstantiate every time
-        Random random = new Random();
-        return lastPrice * (1 + (random.nextGaussian() * monthlyVolatility));
+        return lastPrice * (1 + (RANDOM.nextGaussian() * monthlyVolatility));
     }
 }

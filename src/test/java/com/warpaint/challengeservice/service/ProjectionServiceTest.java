@@ -10,11 +10,11 @@ import java.util.List;
 
 import static org.junit.Assert.*;
 
-public class PredictionServiceTest {
+public class ProjectionServiceTest {
 
     @Test
-    public void predictPricing() {
-        PredictionService predictionService = new PredictionService(new ChangeCalculator());
+    public void projectedPricingTest() {
+        ProjectionService projectionService = new ProjectionService(new ChangeCalculator());
 
         List<Pricing> history = new ArrayList<>();
 
@@ -32,13 +32,13 @@ public class PredictionServiceTest {
                 .closePrice(BigDecimal.valueOf(12.0)).tradeDate(date3)
                 .build());
 
-        List<Pricing> predictedPricings = predictionService.predictPricing(120, history);
+        List<Pricing> pricings = projectionService.projectedPricing(120, history);
 
-        assertEquals(3, predictedPricings.size());
+        assertEquals(3, pricings.size());
 
-        Pricing max = predictedPricings.get(0);
-        Pricing med = predictedPricings.get(1);
-        Pricing min = predictedPricings.get(2);
+        Pricing max = pricings.get(0);
+        Pricing med = pricings.get(1);
+        Pricing min = pricings.get(2);
 
         assertTrue(min.getClosePrice().doubleValue() < med.getClosePrice().doubleValue());
         assertTrue(med.getClosePrice().doubleValue() < max.getClosePrice().doubleValue());

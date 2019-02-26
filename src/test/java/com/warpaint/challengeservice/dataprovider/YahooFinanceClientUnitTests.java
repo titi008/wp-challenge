@@ -10,6 +10,7 @@ import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.mockito.Spy;
 import org.springframework.http.HttpStatus;
 
 import java.io.ByteArrayInputStream;
@@ -21,7 +22,11 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.anyObject;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 
 public class YahooFinanceClientUnitTests {
@@ -34,6 +39,9 @@ public class YahooFinanceClientUnitTests {
 
     @Mock
     private HttpHandler httpHandler;
+
+    @Spy
+    private YahooDataParser yahooDataParser;
 
     private final String SYMBOL = "LOGM";
     private final LocalDate FROM = LocalDate.parse("2017-01-01");
@@ -101,7 +109,7 @@ public class YahooFinanceClientUnitTests {
                 dataSet.get(1));
     }
 
-    @Test
+    @Test(expected = IOException.class)
     public void testFetchPriceData_IOException() throws IOException {
 
         doNothing().when(session).acquireCrumbWithTicker(SYMBOL);
@@ -117,9 +125,7 @@ public class YahooFinanceClientUnitTests {
         doReturn(entity).when(httpResponse).getEntity();
         doThrow(IOException.class).when(entity).getContent();
 
-        List<PricingHistory> dataSet = client.fetchPriceData(SYMBOL, FROM, TO);
-
-        assertEquals(0, dataSet.size());
+        client.fetchPriceData(SYMBOL, FROM, TO);
     }
 
     @Test
@@ -220,7 +226,7 @@ public class YahooFinanceClientUnitTests {
                 dataSet.get(1));
     }
 
-    @Test
+    @Test(expected = IOException.class)
     public void testFetchDividendData_IOException() throws IOException {
 
         doNothing().when(session).acquireCrumbWithTicker(SYMBOL);
@@ -236,9 +242,7 @@ public class YahooFinanceClientUnitTests {
         doReturn(entity).when(httpResponse).getEntity();
         doThrow(IOException.class).when(entity).getContent();
 
-        List<DividendHistory> dataSet = client.fetchDividendData(SYMBOL, FROM, TO);
-
-        assertEquals(0, dataSet.size());
+        client.fetchDividendData(SYMBOL, FROM, TO);
     }
 
     @Test
@@ -285,7 +289,7 @@ public class YahooFinanceClientUnitTests {
     }
 
     @Test
-    public void testFetchPriceData_Http404() {
+    public void testFetchPriceData_Http404() throws Exception {
         doNothing().when(session).acquireCrumbWithTicker(SYMBOL);
 
         HttpResponse httpResponse = mock(HttpResponse.class);
@@ -301,7 +305,7 @@ public class YahooFinanceClientUnitTests {
     }
 
     @Test
-    public void testFetchDividendData_Http404() {
+    public void testFetchDividendData_Http404() throws IOException {
         doNothing().when(session).acquireCrumbWithTicker(SYMBOL);
 
         HttpResponse httpResponse = mock(HttpResponse.class);
