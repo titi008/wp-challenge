@@ -10,6 +10,7 @@ import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.mockito.Spy;
 import org.springframework.http.HttpStatus;
 
 import java.io.ByteArrayInputStream;
@@ -21,7 +22,11 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.anyObject;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 
 public class YahooFinanceClientUnitTests {
@@ -34,6 +39,9 @@ public class YahooFinanceClientUnitTests {
 
     @Mock
     private HttpHandler httpHandler;
+
+    @Spy
+    private YahooDataParser yahooDataParser;
 
     private final String SYMBOL = "LOGM";
     private final LocalDate FROM = LocalDate.parse("2017-01-01");
@@ -75,13 +83,33 @@ public class YahooFinanceClientUnitTests {
         doReturn(entity).when(httpResponse).getEntity();
         doReturn(stream).when(entity).getContent();
 
-        List<?> dataSet = client.fetchPriceData(SYMBOL, FROM, TO);
+        List<PricingHistory> dataSet = client.fetchPriceData(SYMBOL, FROM, TO);
         assertEquals(2, dataSet.size());
 
-        // TODO assert
+        assertEquals(PricingHistory.builder()
+                        .date(date1)
+                        .open(BigDecimal.valueOf(1.0))
+                        .high(BigDecimal.valueOf(2.0))
+                        .low(BigDecimal.valueOf(3.0))
+                        .close(BigDecimal.valueOf(close1.doubleValue()))
+                        .adjClose(BigDecimal.valueOf(5.0))
+                        .volume(BigDecimal.valueOf(6.0))
+                        .build(),
+                dataSet.get(0));
+
+        assertEquals(PricingHistory.builder()
+                        .date(date2)
+                        .open(BigDecimal.valueOf(1.0))
+                        .high(BigDecimal.valueOf(2.0))
+                        .low(BigDecimal.valueOf(3.0))
+                        .close(BigDecimal.valueOf(close2.doubleValue()))
+                        .adjClose(BigDecimal.valueOf(11.0))
+                        .volume(BigDecimal.valueOf(12.0))
+                        .build(),
+                dataSet.get(1));
     }
 
-    @Test
+    @Test(expected = IOException.class)
     public void testFetchPriceData_IOException() throws IOException {
 
         doNothing().when(session).acquireCrumbWithTicker(SYMBOL);
@@ -97,9 +125,7 @@ public class YahooFinanceClientUnitTests {
         doReturn(entity).when(httpResponse).getEntity();
         doThrow(IOException.class).when(entity).getContent();
 
-        List<?> dataSet = client.fetchPriceData(SYMBOL, FROM, TO);
-
-        assertEquals(0, dataSet.size());
+        client.fetchPriceData(SYMBOL, FROM, TO);
     }
 
     @Test
@@ -129,10 +155,30 @@ public class YahooFinanceClientUnitTests {
         doReturn(entity).when(httpResponse).getEntity();
         doReturn(stream).when(entity).getContent();
 
-        List<?> dataSet = client.fetchPriceData(SYMBOL, FROM, TO);
+        List<PricingHistory> dataSet = client.fetchPriceData(SYMBOL, FROM, TO);
         assertEquals(2, dataSet.size());
 
-        // TODO assert
+        assertEquals(PricingHistory.builder()
+                        .date(date1)
+                        .open(BigDecimal.valueOf(1.0))
+                        .high(BigDecimal.valueOf(2.0))
+                        .low(BigDecimal.valueOf(3.0))
+                        .close(BigDecimal.valueOf(close1.doubleValue()))
+                        .adjClose(BigDecimal.valueOf(5.0))
+                        .volume(BigDecimal.valueOf(6.0))
+                        .build(),
+                dataSet.get(0));
+
+        assertEquals(PricingHistory.builder()
+                        .date(date2)
+                        .open(BigDecimal.valueOf(1.0))
+                        .high(BigDecimal.valueOf(2.0))
+                        .low(BigDecimal.valueOf(3.0))
+                        .close(BigDecimal.valueOf(close2.doubleValue()))
+                        .adjClose(BigDecimal.valueOf(11.0))
+                        .volume(BigDecimal.valueOf(12.0))
+                        .build(),
+                dataSet.get(1));
     }
 
     @Test
@@ -164,13 +210,23 @@ public class YahooFinanceClientUnitTests {
         doReturn(entity).when(httpResponse).getEntity();
         doReturn(stream).when(entity).getContent();
 
-        List<?> dataSet = client.fetchDividendData(SYMBOL, FROM, TO);
+        List<DividendHistory> dataSet = client.fetchDividendData(SYMBOL, FROM, TO);
         assertEquals(2, dataSet.size());
         
-        // TODO assert
+        assertEquals(DividendHistory.builder()
+                        .date(date1)
+                        .dividend(dividend1)
+                        .build(),
+                dataSet.get(0));
+
+        assertEquals(DividendHistory.builder()
+                        .date(date2)
+                        .dividend(dividend2)
+                        .build(),
+                dataSet.get(1));
     }
 
-    @Test
+    @Test(expected = IOException.class)
     public void testFetchDividendData_IOException() throws IOException {
 
         doNothing().when(session).acquireCrumbWithTicker(SYMBOL);
@@ -186,9 +242,7 @@ public class YahooFinanceClientUnitTests {
         doReturn(entity).when(httpResponse).getEntity();
         doThrow(IOException.class).when(entity).getContent();
 
-        List<?> dataSet = client.fetchDividendData(SYMBOL, FROM, TO);
-
-        assertEquals(0, dataSet.size());
+        client.fetchDividendData(SYMBOL, FROM, TO);
     }
 
     @Test
@@ -218,14 +272,24 @@ public class YahooFinanceClientUnitTests {
         doReturn(entity).when(httpResponse).getEntity();
         doReturn(stream).when(entity).getContent();
 
-        List<?> dataSet = client.fetchDividendData(SYMBOL, FROM, TO);
+        List<DividendHistory> dataSet = client.fetchDividendData(SYMBOL, FROM, TO);
         assertEquals(2, dataSet.size());
 
-        // TODO assert
+        assertEquals(DividendHistory.builder()
+                        .date(date1)
+                        .dividend(dividend1)
+                        .build(),
+                dataSet.get(0));
+
+        assertEquals(DividendHistory.builder()
+                        .date(date2)
+                        .dividend(dividend2)
+                        .build(),
+                dataSet.get(1));
     }
 
     @Test
-    public void testFetchPriceData_Http404() {
+    public void testFetchPriceData_Http404() throws Exception {
         doNothing().when(session).acquireCrumbWithTicker(SYMBOL);
 
         HttpResponse httpResponse = mock(HttpResponse.class);
@@ -235,13 +299,13 @@ public class YahooFinanceClientUnitTests {
         when(httpResponse.getStatusLine()).thenReturn(statusLine);
         doReturn(httpResponse).when(httpHandler).fetchResponse(anyObject());
 
-        List<?> dataSet = client.fetchPriceData(SYMBOL, FROM, TO);
+        List<PricingHistory> dataSet = client.fetchPriceData(SYMBOL, FROM, TO);
 
         assertEquals(0, dataSet.size());
     }
 
     @Test
-    public void testFetchDividendData_Http404() {
+    public void testFetchDividendData_Http404() throws IOException {
         doNothing().when(session).acquireCrumbWithTicker(SYMBOL);
 
         HttpResponse httpResponse = mock(HttpResponse.class);
@@ -251,7 +315,7 @@ public class YahooFinanceClientUnitTests {
         when(httpResponse.getStatusLine()).thenReturn(statusLine);
         doReturn(httpResponse).when(httpHandler).fetchResponse(anyObject());
 
-        List<?> dataSet = client.fetchDividendData(SYMBOL, FROM, TO);
+        List<DividendHistory> dataSet = client.fetchDividendData(SYMBOL, FROM, TO);
 
         assertEquals(0, dataSet.size());
     }

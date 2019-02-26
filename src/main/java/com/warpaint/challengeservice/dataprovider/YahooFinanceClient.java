@@ -9,10 +9,16 @@ import org.apache.http.util.EntityUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static java.util.Collections.emptyList;
 
@@ -25,15 +31,17 @@ import static java.util.Collections.emptyList;
 @Slf4j
 public class YahooFinanceClient {
 
-	private static final String PRICE_FORMAT_URL = "https://query1.finance.yahoo.com/v7/finance/download/%s?period1=%d&period2=%d&interval=1d&events=history&interval=1d&crumb=%s";
+    private static final String PRICE_FORMAT_URL = "https://query1.finance.yahoo.com/v7/finance/download/%s?period1=%d&period2=%d&interval=1d&events=history&interval=1d&crumb=%s";
 	private static final String DIVIDEND_FORMAT_URL = "https://query1.finance.yahoo.com/v7/finance/download/%s?period1=%d&period2=%d&interval=1d&events=div&interval=1d&crumb=%s";
 
-	@Setter
+    @Setter
 	private YahooFinanceSession session;
 	private HttpHandler httpHandler;
+	private YahooDataParser dataParser;
 
-	public YahooFinanceClient(HttpHandler httpHandler) {
+	public YahooFinanceClient(HttpHandler httpHandler, YahooDataParser yahooDataParser) {
 	    this.httpHandler = httpHandler;
+	    this.dataParser = yahooDataParser;
 
 		this.session = new YahooFinanceSession(httpHandler);
 	}
@@ -70,7 +78,7 @@ public class YahooFinanceClient {
     }
 
 
-	public List<?> fetchPriceData(String symbol, LocalDate fromDate, LocalDate toDate) {
+	public List<PricingHistory> fetchPriceData(String symbol, LocalDate fromDate, LocalDate toDate) throws IOException {
 		log.info("Acquiring price data for {} from {} to {}", symbol, fromDate, toDate);
 		session.acquireCrumbWithTicker(symbol);
 
@@ -81,23 +89,37 @@ public class YahooFinanceClient {
             return emptyList();
         }
 
-        //TODO parse entity.getContent() and return data
-        return emptyList();
-	}
+        List<String> lines = getLines(entity);
 
+        return dataParser.parsePricingData(lines);
+    }
 
-	public List<?> fetchDividendData(String symbol, LocalDate fromDate, LocalDate toDate) {
-		log.info("Acquiring dividend data for {} from {} to {}", symbol, fromDate, toDate);
-		session.acquireCrumbWithTicker(symbol);
+    public List<DividendHistory> fetchDividendData(String symbol, LocalDate fromDate, LocalDate toDate)
+            throws IOException {
+        log.info("Acquiring dividend data for {} from {} to {}", symbol, fromDate, toDate);
+        session.acquireCrumbWithTicker(symbol);
 
-		String dividendURL = constructURL(DIVIDEND_FORMAT_URL, symbol, fromDate, toDate);
+        String dividendURL = constructURL(DIVIDEND_FORMAT_URL, symbol, fromDate, toDate);
         HttpEntity entity = fetchURL(dividendURL, symbol, fromDate, toDate);
         if (entity == null) {
             log.warn("No dividend data available for {} from {} to {}", symbol, fromDate, toDate);
             return emptyList();
         }
 
-        //TODO parse entity.getContent() and return data
-        return emptyList();
-	}
+        List<String> lines = getLines(entity);
+
+        return dataParser.parseDividendData(lines);
+    }
+
+    private List<String> getLines(HttpEntity entity) throws IOException {
+        try (InputStream content = entity.getContent()) {
+            return new BufferedReader(new InputStreamReader(content, StandardCharsets.UTF_8))
+                    .lines()
+                    .collect(Collectors.toList());
+
+        } catch (IOException e) {
+            log.warn("Error while parsing fetched data.", e);
+            throw e;
+        }
+    }
 }
