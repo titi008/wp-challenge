@@ -15,8 +15,6 @@ import java.util.Optional;
 @AllArgsConstructor
 public class ChallengeService {
 
-    public static final int DEFAULT_PREDICTABLE_MONTHS = 240;
-
     private final PricingHistoryDataProvider pricingHistoryDataProvider;
 
     private final ProjectionService projectionService;
@@ -29,11 +27,8 @@ public class ChallengeService {
         return pricingHistoryDataProvider.getPricingHistory(asset, startDate, endDate);
     }
 
-    public List<Pricing> getProjectedAssetData(Asset asset, Optional<Integer> numberOfMonthsOptional) throws Exception {
+    public List<Pricing> getProjectedAssetData(Asset asset, int numberOfMonths) throws Exception {
         log.info("Generating projected price data");
-
-        // TODO By Tibi: Only pass the int into this method
-        int numberOfMonths = numberOfMonthsOptional.orElse(DEFAULT_PREDICTABLE_MONTHS);
 
         List<Pricing> pricingHistoryLastFiveYears = pricingHistoryDataProvider.getPricingHistory(asset);
 

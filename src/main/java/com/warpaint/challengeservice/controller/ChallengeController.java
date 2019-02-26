@@ -19,6 +19,8 @@ import java.util.Optional;
 @RequestMapping("market-data")
 public class ChallengeController {
 
+    public static final int DEFAULT_PREDICTABLE_MONTHS = 240;
+
     private final ChallengeService challengeService;
 
     @RequestMapping("{asset}/historical")
@@ -34,6 +36,6 @@ public class ChallengeController {
     public List<Pricing> getProjectedAssetData(@PathVariable Asset asset,
                                                @RequestParam("numberOfMonths") Optional<Integer> numberOfMonths)
             throws Exception {
-        return challengeService.getProjectedAssetData(asset, numberOfMonths);
+        return challengeService.getProjectedAssetData(asset, numberOfMonths.orElse(DEFAULT_PREDICTABLE_MONTHS));
     }
 }
