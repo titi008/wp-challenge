@@ -7,7 +7,6 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.YearMonth;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -28,6 +27,8 @@ public class ProjectionService {
 
     private final ChangeCalculator changeCalculator;
 
+    private final PricingHistoryByMonthFilter monthFilter;
+
     /**
      * Gives future close prices for the given number of months.
      * Returns a list of 3 element: max, medium, min prices of the last month for 1000 simulations.
@@ -38,8 +39,7 @@ public class ProjectionService {
      */
     public List<Pricing> projectedPricing(int numberOfMonths, List<Pricing> pricingHistory) {
         log.debug("Calculate prices for the next {} months", numberOfMonths);
-        // TODO By Tibi: Expand to class and write test
-        List<Pricing> pricingHistoryByMonth = filterByLastBusinessDayOfMonth(pricingHistory);
+        List<Pricing> pricingHistoryByMonth = monthFilter.filterByLastBusinessDayOfMonth(pricingHistory);
 
         Map<LocalDate, BigDecimal> monthOverMonthChanges =
                 changeCalculator.calculateChangeHistory(pricingHistoryByMonth);
@@ -78,32 +78,6 @@ public class ProjectionService {
                 .openPrice(BigDecimal.ZERO)
                 .tradeDate(date)
                 .build();
-    }
-
-    /**
-     * Return the last pricing for every month. The last pricing is on the last business day of the month.
-     * This filtering also returns the last data from the pricingHistory even if it is not the last business day of the month
-     *
-     * @param pricingHistory Day-by-day pricing history
-     * @return Filtered list by the last business day of every month. The list is sorted ascending by the trade date
-     */
-    private List<Pricing> filterByLastBusinessDayOfMonth(List<Pricing> pricingHistory) {
-        Map<YearMonth, Pricing> lastBusinessDayPricings = new HashMap<>();
-
-        pricingHistory.forEach(pricing -> {
-            LocalDate tradeDate = pricing.getTradeDate();
-            YearMonth yearMonth = YearMonth.of(tradeDate.getYear(), tradeDate.getMonth());
-
-            Pricing lastPricing = lastBusinessDayPricings.get(yearMonth);
-
-            if (lastPricing == null || tradeDate.isAfter(lastPricing.getTradeDate())) {
-                lastBusinessDayPricings.put(yearMonth, pricing);
-            }
-        });
-
-        return lastBusinessDayPricings.values().stream()
-                .sorted(Comparator.comparing(Pricing::getTradeDate))
-                .collect(Collectors.toList());
     }
 
     /**

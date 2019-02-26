@@ -14,7 +14,8 @@ public class ProjectionServiceTest {
 
     @Test
     public void projectedPricingTest() {
-        ProjectionService projectionService = new ProjectionService(new ChangeCalculator());
+        ProjectionService projectionService = new ProjectionService(
+                new ChangeCalculator(), new PricingHistoryByMonthFilter());
 
         List<Pricing> history = new ArrayList<>();
 
