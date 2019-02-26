@@ -22,9 +22,9 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 public class PricingHistoryDataProvider {
 
-    private static final int DEFAULT_HISTORY_YEARS = 5;
-
     private final YahooFinanceClient dataProvider;
+
+    private final DateRangeProvider dateRangeProvider;
 
     /**
      * Get pricing history without providing date range. The default value of years is 5.
@@ -33,7 +33,10 @@ public class PricingHistoryDataProvider {
      * @return Pricing history for the last 5 years
      */
     public List<Pricing> getPricingHistory(Asset asset) throws Exception {
-        return getPricingHistory(asset, Optional.empty(), Optional.empty());
+        LocalDate now = LocalDate.now();
+        return getPricingHistory(asset,
+                dateRangeProvider.getProjectionStartDate(now),
+                now);
     }
 
     /**
@@ -44,17 +47,12 @@ public class PricingHistoryDataProvider {
      * @param endDate
      * @return
      */
-    public List<Pricing> getPricingHistory(Asset asset, Optional<LocalDate> startDate, Optional<LocalDate> endDate)
+    public List<Pricing> getPricingHistory(Asset asset, LocalDate startDate, LocalDate endDate)
             throws Exception {
-        LocalDate now = LocalDate.now();
         // TODO By Tibi: Bean validation instead of these methods
-        LocalDate validStartDate = validateStartDate(startDate, now);
-        LocalDate validEndDate = validateEndDate(endDate, now);
 
-        validateDateRange(validStartDate, validEndDate);
-
-        List<PricingHistory> priceData = dataProvider.fetchPriceData(asset.getSymbol(), validStartDate, validEndDate);
-        List<DividendHistory> dividendData = dataProvider.fetchDividendData(asset.getSymbol(), validStartDate, validEndDate);
+        List<PricingHistory> priceData = dataProvider.fetchPriceData(asset.getSymbol(), startDate, endDate);
+        List<DividendHistory> dividendData = dataProvider.fetchDividendData(asset.getSymbol(), startDate, endDate);
 
         return priceData.stream().map(pricingHistory -> {
             // TODO By Tibi: Expand to class and test binding
@@ -70,51 +68,5 @@ public class PricingHistoryDataProvider {
                     .tradeDate(pricingHistory.getDate())
                     .build();
         }).sorted(Comparator.comparing(Pricing::getTradeDate)).collect(Collectors.toList());
-    }
-
-    /**
-     * Check that start date is before end date
-     *
-     * @param startDate Start date
-     * @param endDate   End date
-     */
-    private void validateDateRange(LocalDate startDate, LocalDate endDate) {
-        if (endDate.isBefore(startDate)) {
-            throw new IllegalArgumentException("End date is before start date");
-        }
-    }
-
-    /**
-     * Validate startDate. Return now - 5 years if not presents
-     *
-     * @param startDate Start date
-     * @param now Current date
-     */
-    private LocalDate validateStartDate(Optional<LocalDate> startDate, LocalDate now) {
-        if (!startDate.isPresent()) {
-            return now.minusYears(DEFAULT_HISTORY_YEARS);
-        }
-
-        LocalDate date = startDate.get();
-
-        if (date.isAfter(now)) {
-            throw new IllegalArgumentException("Start date is after current date");
-        }
-
-        return date;
-    }
-
-    /**
-     * Validate endDate
-     *
-     * @param endDate End date
-     * @param now Current date
-     */
-    private LocalDate validateEndDate(Optional<LocalDate> endDate, LocalDate now) {
-        if (!endDate.isPresent() || endDate.get().isAfter(now)) {
-            return now;
-        }
-
-        return endDate.get();
     }
 }

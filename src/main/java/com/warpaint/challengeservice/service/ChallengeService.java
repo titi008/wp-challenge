@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @Slf4j
@@ -20,8 +19,8 @@ public class ChallengeService {
     private final ProjectionService projectionService;
 
     public List<Pricing> getHistoricalAssetData(Asset asset,
-                                                Optional<LocalDate> startDate,
-                                                Optional<LocalDate> endDate) throws Exception {
+                                                LocalDate startDate,
+                                                LocalDate endDate) throws Exception {
         log.info("Fetching historical price data");
 
         return pricingHistoryDataProvider.getPricingHistory(asset, startDate, endDate);
