@@ -19,8 +19,10 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 @AllArgsConstructor
+// TODO By Tibi: Rename every Prediction to Projected
 public class PredictionService {
 
+    // TODO Create a provider and inject here
     private static final double NUMBER_OF_SIMULATION = 1000;
 
     private final ChangeCalculator changeCalculator;
@@ -35,6 +37,7 @@ public class PredictionService {
      */
     public List<Pricing> predictPricing(int numberOfMonths, List<Pricing> pricingHistory) {
         log.debug("Calculate predicted pricest for the next {} months", numberOfMonths);
+        // TODO By Tibi: Expand to class and write test
         List<Pricing> pricingHistoryByMonth = filterByLastBusinessDayOfMonth(pricingHistory);
 
         Map<LocalDate, BigDecimal> monthOverMonthChanges =
@@ -45,6 +48,7 @@ public class PredictionService {
         List<Double> predictedCloseValues = predictCloseValues(
                 new ArrayList<>(monthOverMonthChanges.values()),
                 numberOfMonths,
+                // TODO Move to a method
                 pricingHistoryByMonth.get(pricingHistoryByMonth.size() - 1).getClosePrice());
 
         return Arrays.asList(
@@ -163,15 +167,19 @@ public class PredictionService {
         LinkedList<Double> prices = new LinkedList<>();
 
         double price = calculateNextPrice(monthlyVolatility, lastPrice.doubleValue());
-        // Limit price to positive values
-        prices.add(price < 0 ? 0 : price);
+
+        prices.add(limitPriceToNonNegativeValue(price));
 
         while (prices.size() < numberOfMonths) {
             double nextPrice = calculateNextPrice(monthlyVolatility, prices.getLast());
-            prices.add(nextPrice < 0 ? 0 : nextPrice);
+            prices.add(limitPriceToNonNegativeValue(nextPrice));
         }
 
         return prices;
+    }
+
+    private double limitPriceToNonNegativeValue(double price) {
+        return price < 0 ? 0 : price;
     }
 
     /**
@@ -182,6 +190,7 @@ public class PredictionService {
      * @return
      */
     private double calculateNextPrice(double monthlyVolatility, double lastPrice) {
+        // TODO Inject this random instance, do not reinstantiate every time
         Random random = new Random();
         return lastPrice * (1 + (random.nextGaussian() * monthlyVolatility));
     }

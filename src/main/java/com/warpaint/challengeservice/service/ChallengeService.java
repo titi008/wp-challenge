@@ -31,6 +31,7 @@ public class ChallengeService {
     public List<Pricing> getProjectedAssetData(Asset asset, Optional<Integer> numberOfMonthsOptional) {
         log.info("Generating projected price data");
 
+        // TODO By Tibi: Only pass the int into this method
         int numberOfMonths = numberOfMonthsOptional.orElse(DEFAULT_PREDICTABLE_MONTHS);
 
         List<Pricing> pricingHistoryLastFiveYears = pricingHistoryDataProvider.getPricingHistory(asset);

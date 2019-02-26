@@ -34,10 +34,11 @@ import static java.util.Collections.emptyList;
 @Slf4j
 public class YahooFinanceClient {
 
-	private static final String PRICE_FORMAT_URL = "https://query1.finance.yahoo.com/v7/finance/download/%s?period1=%d&period2=%d&interval=1d&events=history&interval=1d&crumb=%s";
+    private static final String PRICE_FORMAT_URL = "https://query1.finance.yahoo.com/v7/finance/download/%s?period1=%d&period2=%d&interval=1d&events=history&interval=1d&crumb=%s";
 	private static final String DIVIDEND_FORMAT_URL = "https://query1.finance.yahoo.com/v7/finance/download/%s?period1=%d&period2=%d&interval=1d&events=div&interval=1d&crumb=%s";
+    public static final int PAYLOAD_START_INDEX = 1;
 
-	@Setter
+    @Setter
 	private YahooFinanceSession session;
 	private HttpHandler httpHandler;
 
@@ -95,6 +96,7 @@ public class YahooFinanceClient {
         return parsePricingData(entity);
     }
 
+    // TODO By Tibi: Create a parser class for the following methods
     /**
      * Parse content from HttpEntity
      * @param entity
@@ -108,7 +110,7 @@ public class YahooFinanceClient {
                     .collect(Collectors.toList());
             log.trace(contentList.toString());
 
-            List<PricingHistory> pricingHistories = contentList.stream().skip(1)
+            List<PricingHistory> pricingHistories = contentList.stream().skip(PAYLOAD_START_INDEX)
                     .map(this::parsePricingHistory).filter(Objects::nonNull).collect(Collectors.toList());
 
             return pricingHistories;
@@ -127,19 +129,25 @@ public class YahooFinanceClient {
 
             PricingHistory pricingHistory = PricingHistory.builder()
                     .date(LocalDate.parse(columns[0]))
-                    .open(BigDecimal.valueOf(Double.parseDouble(columns[1])))
-                    .high(BigDecimal.valueOf(Double.parseDouble(columns[2])))
-                    .low(BigDecimal.valueOf(Double.parseDouble(columns[3])))
-                    .close(BigDecimal.valueOf(Double.parseDouble(columns[4])))
-                    .adjClose(BigDecimal.valueOf(Double.parseDouble(columns[5])))
-                    .volume(BigDecimal.valueOf(Double.parseDouble(columns[6])))
+                    .open(parseDecimalValue(columns[1]))
+                    .high(parseDecimalValue(columns[2]))
+                    .low(parseDecimalValue(columns[3]))
+                    .close(parseDecimalValue(columns[4]))
+                    .adjClose(parseDecimalValue(columns[5]))
+                    .volume(parseDecimalValue(columns[6]))
                     .build();
 
             return pricingHistory;
-        } catch (NumberFormatException e) {
-            return null;
         } catch (DateTimeParseException e) {
             return null;
+        }
+    }
+
+    private BigDecimal parseDecimalValue(String value) {
+        try {
+        return BigDecimal.valueOf(Double.parseDouble(value));
+        } catch (NumberFormatException e) {
+            return new BigDecimal(-1);
         }
     }
 
@@ -192,12 +200,10 @@ public class YahooFinanceClient {
 
             DividendHistory dividendHistory = DividendHistory.builder()
                     .date(LocalDate.parse(columns[0]))
-                    .dividend(BigDecimal.valueOf(Double.parseDouble(columns[1])))
+                    .dividend(parseDecimalValue(columns[1]))
                     .build();
 
             return dividendHistory;
-        } catch (NumberFormatException e) {
-            return null;
         } catch (DateTimeParseException e) {
             return null;
         }

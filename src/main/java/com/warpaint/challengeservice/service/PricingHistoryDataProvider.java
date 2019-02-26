@@ -46,15 +46,17 @@ public class PricingHistoryDataProvider {
      */
     public List<Pricing> getPricingHistory(Asset asset, Optional<LocalDate> startDate, Optional<LocalDate> endDate) {
         LocalDate now = LocalDate.now();
+        // TODO By Tibi: Bean validation instead of these methods
         LocalDate validStartDate = validateStartDate(startDate, now);
         LocalDate validEndDate = validateEndDate(endDate, now);
 
-        validateStartDateBeforeEndDate(validStartDate, validEndDate);
+        validateDateRange(validStartDate, validEndDate);
 
         List<PricingHistory> priceData = dataProvider.fetchPriceData(asset.getSymbol(), validStartDate, validEndDate);
         List<DividendHistory> dividendData = dataProvider.fetchDividendData(asset.getSymbol(), validStartDate, validEndDate);
 
         return priceData.stream().map(pricingHistory -> {
+            // TODO By Tibi: Expand to class and test binding
             Optional<DividendHistory> dividend = dividendData.stream()
                     .filter(dividendHistory -> dividendHistory.getDate().equals(pricingHistory.getDate()))
                     .findAny();
@@ -75,7 +77,7 @@ public class PricingHistoryDataProvider {
      * @param startDate Start date
      * @param endDate   End date
      */
-    private void validateStartDateBeforeEndDate(LocalDate startDate, LocalDate endDate) {
+    private void validateDateRange(LocalDate startDate, LocalDate endDate) {
         if (endDate.isBefore(startDate)) {
             throw new IllegalArgumentException("End date is before start date");
         }
