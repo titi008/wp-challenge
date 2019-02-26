@@ -23,13 +23,13 @@ public class ChallengeService {
                                                 LocalDate endDate) throws Exception {
         log.info("Fetching historical price data");
 
-        return pricingHistoryDataProvider.getPricingHistory(asset, startDate, endDate);
+        return pricingHistoryDataProvider.getPricingHistory(asset.getSymbol(), startDate, endDate);
     }
 
     public List<Pricing> getProjectedAssetData(Asset asset, int numberOfMonths) throws Exception {
         log.info("Generating projected price data");
 
-        List<Pricing> pricingHistoryLastFiveYears = pricingHistoryDataProvider.getPricingHistory(asset);
+        List<Pricing> pricingHistoryLastFiveYears = pricingHistoryDataProvider.getPricingHistory(asset.getSymbol());
 
         return projectionService.projectedPricing(numberOfMonths, pricingHistoryLastFiveYears);
     }

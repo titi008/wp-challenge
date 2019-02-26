@@ -3,7 +3,6 @@ package com.warpaint.challengeservice.service;
 import com.warpaint.challengeservice.dataprovider.DividendHistory;
 import com.warpaint.challengeservice.dataprovider.PricingHistory;
 import com.warpaint.challengeservice.dataprovider.YahooFinanceClient;
-import com.warpaint.challengeservice.model.Asset;
 import com.warpaint.challengeservice.model.Pricing;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -27,46 +26,47 @@ public class PricingHistoryDataProvider {
     private final DateRangeProvider dateRangeProvider;
 
     /**
-     * Get pricing history without providing date range. The default value of years is 5.
+     * Get pricing history without providing date range
      *
-     * @param asset Asset symbol
+     * @param symbol Asset symbol
      * @return Pricing history for the last 5 years
      */
-    public List<Pricing> getPricingHistory(Asset asset) throws Exception {
+    public List<Pricing> getPricingHistory(String symbol) throws Exception {
         LocalDate now = LocalDate.now();
-        return getPricingHistory(asset,
+        return getPricingHistory(symbol,
                 dateRangeProvider.getProjectionStartDate(now),
                 now);
     }
 
     /**
-     * Get pricing history for the given interval. 5 years by default if intervals are empty
+     * Get pricing history for the given interval
      *
-     * @param asset
-     * @param startDate
-     * @param endDate
-     * @return
+     * @param symbol Asset symbol
+     * @param startDate Start Date
+     * @param endDate End Date
+     * @return Pricing history between dates
      */
-    public List<Pricing> getPricingHistory(Asset asset, LocalDate startDate, LocalDate endDate)
+    public List<Pricing> getPricingHistory(String symbol, LocalDate startDate, LocalDate endDate)
             throws Exception {
-        // TODO By Tibi: Bean validation instead of these methods
+        List<PricingHistory> priceData = dataProvider.fetchPriceData(symbol, startDate, endDate);
+        List<DividendHistory> dividendData = dataProvider.fetchDividendData(symbol, startDate, endDate);
 
-        List<PricingHistory> priceData = dataProvider.fetchPriceData(asset.getSymbol(), startDate, endDate);
-        List<DividendHistory> dividendData = dataProvider.fetchDividendData(asset.getSymbol(), startDate, endDate);
+        return priceData.stream().map(pricingHistory -> bindDividendToPricing(dividendData, pricingHistory))
+                .sorted(Comparator.comparing(Pricing::getTradeDate)).collect(Collectors.toList());
+    }
 
-        return priceData.stream().map(pricingHistory -> {
-            // TODO By Tibi: Expand to class and test binding
-            Optional<DividendHistory> dividend = dividendData.stream()
-                    .filter(dividendHistory -> dividendHistory.getDate().equals(pricingHistory.getDate()))
-                    .findAny();
-            return Pricing.builder()
-                    .closePrice(pricingHistory.getClose())
-                    .dividend(dividend.isPresent() ? dividend.get().getDividend() : BigDecimal.ZERO)
-                    .highPrice(pricingHistory.getHigh())
-                    .lowPrice(pricingHistory.getLow())
-                    .openPrice(pricingHistory.getOpen())
-                    .tradeDate(pricingHistory.getDate())
-                    .build();
-        }).sorted(Comparator.comparing(Pricing::getTradeDate)).collect(Collectors.toList());
+    private Pricing bindDividendToPricing(List<DividendHistory> dividendData, PricingHistory pricingHistory) {
+        Optional<DividendHistory> dividend = dividendData.stream()
+                .filter(dividendHistory -> dividendHistory.getDate().equals(pricingHistory.getDate()))
+                .findAny();
+
+        return Pricing.builder()
+                .closePrice(pricingHistory.getClose())
+                .dividend(dividend.isPresent() ? dividend.get().getDividend() : BigDecimal.ZERO)
+                .highPrice(pricingHistory.getHigh())
+                .lowPrice(pricingHistory.getLow())
+                .openPrice(pricingHistory.getOpen())
+                .tradeDate(pricingHistory.getDate())
+                .build();
     }
 }

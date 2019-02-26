@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Run 1000 simulations for the given months to project future prices
@@ -20,9 +19,7 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 public class ProjectionService {
 
-    // TODO Create a provider and inject here
     private static final double NUMBER_OF_SIMULATION = 1000;
-    // TODO Inject this random instance
     private static final Random RANDOM = new Random();
 
     private final ChangeCalculator changeCalculator;
@@ -110,7 +107,7 @@ public class ProjectionService {
      * @return List of 3 elements with this order: {max, med, min}
      */
     private List<Double> getStatisticalValues(Set<Double> lastProjectedMonthCloseValues) {
-        List<Double> sortedValues = lastProjectedMonthCloseValues.stream().collect(Collectors.toList());
+        List<Double> sortedValues = new ArrayList<>(lastProjectedMonthCloseValues);
         sortedValues.sort(Comparator.naturalOrder());
 
         Double max = sortedValues.get(sortedValues.size() - 1);
